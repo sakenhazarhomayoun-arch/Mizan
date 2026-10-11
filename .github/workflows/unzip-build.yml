@@ -1,0 +1,25 @@
+name: Build Mizan APK
+
+on:
+workflow_dispatch:
+push:
+paths:
+- '.github/workflows/unzip-build.yml'
+
+jobs:
+build:
+runs-on: ubuntu-latest
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
+
+  - name: Extract project ZIP
+    run: |
+      mkdir source
+      unzip -o MizanAndroidProject_CloudBuild.zip -d source
+      find source -name '*.zip' -delete
+      cp -r source/MizanAndroidProject/. . 2>/dev/null || true
+      find source -maxdepth 3 -type f | head -80
+
+  - name: Show project files
+    run: ls -la
