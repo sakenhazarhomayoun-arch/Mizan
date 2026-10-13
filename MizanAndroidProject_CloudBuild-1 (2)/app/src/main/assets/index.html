@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>میزان — پخش‌کننده تراز خودکار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E8E9EC;
+    --surface:#F4F4F2;
+    --surface-2:#FFFFFF;
+    --text:#1B1E22;
+    --text-dim:#5B6169;
+    --border:#C7CBD1;
+    --accent-amber:#B9700E;
+    --accent-teal:#166B64;
+    --accent-danger:#A83A2C;
+    --shadow: 0 1px 2px rgba(20,20,20,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14181D;
+      --surface:#1B2027;
+      --surface-2:#20262E;
+      --text:#E8E6E0;
+      --text-dim:#8B92A0;
+      --border:#333B45;
+      --accent-amber:#E8A33D;
+      --accent-teal:#4FB0A8;
+      --accent-danger:#E0685A;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14181D;
+    --surface:#1B2027;
+    --surface-2:#20262E;
+    --text:#E8E6E0;
+    --text-dim:#8B92A0;
+    --border:#333B45;
+    --accent-amber:#E8A33D;
+    --accent-teal:#4FB0A8;
+    --accent-danger:#E0685A;
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Vazirmatn','Tahoma',sans-serif;
+    min-height:100vh;
+    line-height:1.7;
+  }
+  ::selection{background:var(--accent-teal); color:#fff;}
+
+  a,button,input{font-family:inherit;}
+  button{cursor:pointer;}
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:20px 18px 60px;
+  }
+
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    padding:6px 2px 22px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:22px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .brand h1{
+    font-size:26px;
+    font-weight:800;
+    margin:0;
+    letter-spacing:.2px;
+  }
+  .brand p{
+    margin:6px 0 0;
+    color:var(--text-dim);
+    font-size:13.5px;
+    max-width:46ch;
+  }
+  .theme-btn{
+    width:38px; height:38px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-dim);
+    flex:none;
+  }
+  .theme-btn:hover{color:var(--text); border-color:var(--text-dim);}
+  .theme-btn svg{width:18px;height:18px;}
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-areas: "player playlist";
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width: 880px){
+    .layout{grid-template-columns:1fr; grid-template-areas:"player" "playlist";}
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+  }
+
+  /* ---- Player ---- */
+  .player{grid-area:player; padding:18px; display:flex; flex-direction:column; gap:16px;}
+
+  .now-playing{
+    display:flex; flex-direction:column; gap:2px; min-height:44px;
+  }
+  .np-eyebrow{font-size:12px; color:var(--text-dim);}
+  .np-title{font-size:19px; font-weight:700;}
+  .np-empty{color:var(--text-dim); font-size:14.5px;}
+
+  .viz-wrap{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:10px 10px 6px;
+  }
+  canvas#viz{width:100%; height:150px; display:block;}
+  .viz-status{
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px; color:var(--text-dim);
+    padding:8px 2px 2px;
+    min-height:20px;
+  }
+  .viz-dot{width:7px;height:7px;border-radius:50%; background:var(--text-dim); flex:none;}
+  .viz-dot.active{background:var(--accent-amber); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-amber) 25%, transparent);}
+
+  .transport{
+    display:flex; align-items:center; gap:14px;
+  }
+  .tbtn{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:50%;
+    width:40px; height:40px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text);
+  }
+  .tbtn:hover{border-color:var(--text-dim);}
+  .tbtn.main{width:52px; height:52px; background:var(--accent-teal); border-color:var(--accent-teal); color:#fff;}
+  .tbtn svg{width:18px; height:18px;}
+  .tbtn.main svg{width:22px; height:22px;}
+  .tbtn:disabled{opacity:.4; cursor:default;}
+
+  .seek-row{flex:1; display:flex; align-items:center; gap:10px; font-variant-numeric:tabular-nums;}
+  .time{font-size:12px; color:var(--text-dim); width:42px; text-align:center;}
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:4px;
+    background:var(--border);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:13px; height:18px;
+    border-radius:3px;
+    background:var(--accent-teal);
+    border:none;
+    margin-top:-7px;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px; height:18px;
+    border-radius:3px;
+    background:var(--accent-teal);
+    border:none;
+    cursor:pointer;
+  }
+  input[type=range]:disabled::-webkit-slider-thumb{background:var(--text-dim);}
+  input[type=range]:disabled::-moz-range-thumb{background:var(--text-dim);}
+
+  .row{display:flex; align-items:center; gap:12px;}
+  .volume-row{max-width:220px;}
+  .icon-sm{width:16px;height:16px; color:var(--text-dim); flex:none;}
+
+  /* ---- EQ meters ---- */
+  .eq-block{
+    display:flex; flex-direction:column; gap:10px;
+    padding-top:6px; border-top:1px solid var(--border);
+  }
+  .eq-head{display:flex; align-items:center; justify-content:space-between;}
+  .eq-head h2{font-size:13.5px; font-weight:700; margin:0;}
+
+  .switch{
+    position:relative; display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; color:var(--text-dim); user-select:none;
+  }
+  .switch input{position:absolute; opacity:0; width:0; height:0;}
+  .switch .track{
+    width:36px; height:20px; border-radius:3px;
+    background:var(--surface-2); border:1px solid var(--border);
+    position:relative; transition:background .15s;
+    flex:none;
+  }
+  .switch .track::after{
+    content:""; position:absolute; top:2px; right:2px;
+    width:14px; height:14px; border-radius:2px;
+    background:var(--text-dim);
+    transition:transform .15s, background .15s;
+  }
+  .switch input:checked + .track{border-color:var(--accent-amber);}
+  .switch input:checked + .track::after{
+    transform:translateX(-16px);
+    background:var(--accent-amber);
+  }
+
+  .meters{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .meter{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:9px 10px;
+  }
+  .meter-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .meter-label{font-size:12.5px; font-weight:600;}
+  .meter-val{font-size:11.5px; color:var(--text-dim); font-variant-numeric:tabular-nums;}
+  .fader{position:relative; height:4px; background:var(--border); border-radius:2px; margin:0 2px;}
+  .fader .zero{position:absolute; top:-3px; width:1px; height:10px; background:var(--text-dim); opacity:.5;}
+  .fader .fill{position:absolute; top:-3px; width:8px; height:10px; border-radius:2px; background:var(--accent-teal); transform:translateX(50%);}
+  .meter input[type=range]{margin-top:8px;}
+
+  .add-row{display:flex; gap:10px; padding-top:6px; border-top:1px solid var(--border);}
+  .btn{
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:5px;
+    font-size:13.5px;
+    font-weight:600;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:hover{border-color:var(--text-dim);}
+  .btn.primary{background:var(--accent-teal); border-color:var(--accent-teal); color:#fff;}
+  .btn svg{width:15px; height:15px;}
+
+  /* ---- Playlist ---- */
+  .playlist{grid-area:playlist; padding:16px; display:flex; flex-direction:column; gap:10px; max-height:640px;}
+  .playlist-head{display:flex; justify-content:space-between; align-items:baseline;}
+  .playlist-head h2{font-size:14px; font-weight:700; margin:0;}
+  .playlist-count{font-size:12px; color:var(--text-dim);}
+  .plist{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; overflow-y:auto; padding-left:2px;}
+  .plist::-webkit-scrollbar{width:6px;}
+  .plist::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;}
+
+  .track-item{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 8px;
+    border-radius:5px;
+    border:1px solid transparent;
+  }
+  .track-item:hover{background:var(--surface-2);}
+  .track-item.playing{background:var(--surface-2); border-color:var(--accent-teal);}
+  .track-play{
+    flex:none; width:26px; height:26px; border-radius:50%;
+    border:1px solid var(--border); background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim);
+  }
+  .track-item.playing .track-play{color:var(--accent-teal); border-color:var(--accent-teal);}
+  .track-play svg{width:11px; height:11px;}
+  .track-name{flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .track-item.playing .track-name{color:var(--accent-teal); font-weight:600;}
+  .track-actions{display:flex; gap:2px; opacity:0; transition:opacity .1s;}
+  .track-item:hover .track-actions{opacity:1;}
+  .track-actions button{
+    width:22px; height:22px; border:none; background:transparent; color:var(--text-dim);
+    display:flex; align-items:center; justify-content:center; border-radius:4px;
+  }
+  .track-actions button:hover{background:var(--border); color:var(--text);}
+  .track-actions svg{width:13px; height:13px;}
+
+  .empty-state{
+    text-align:center; padding:26px 10px; color:var(--text-dim); font-size:13px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .empty-state svg{width:30px; height:30px; opacity:.5;}
+
+  .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>میزان</h1>
+      <p>پخش‌کننده‌ای که صدای هر آهنگ رو خودکار برای اسپیکر ماشین تنظیم می‌کنه؛ نه تیز، نه بم بیش‌ازحد.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="تغییر حالت روشن یا تاریک" title="تغییر حالت روشن یا تاریک">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+    </button>
+  </header>
+
+  <div class="layout">
+
+    <!-- PLAYER -->
+    <section class="panel player">
+
+      <div class="now-playing">
+        <span class="np-eyebrow" id="npEyebrow">در حال حاضر</span>
+        <span class="np-title" id="npTitle">آهنگی انتخاب نشده</span>
+      </div>
+
+      <div class="viz-wrap">
+        <canvas id="viz" width="900" height="150"></canvas>
+        <div class="viz-status">
+          <span class="viz-dot" id="vizDot"></span>
+          <span id="vizStatusText">برای شروع، یک آهنگ اضافه کن.</span>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="tbtn" id="prevBtn" aria-label="آهنگ قبلی" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l10-6v12z" transform="scale(-1,1) translate(-24,0)"></path></svg>
+        </button>
+        <button class="tbtn main" id="playBtn" aria-label="پخش" disabled>
+          <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" transform="scale(-1,1) translate(-24,0)"></path></svg>
+        </button>
+        <button class="tbtn" id="nextBtn" aria-label="آهنگ بعدی" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l10-6v12z"></path></svg>
+        </button>
+
+        <div class="seek-row">
+          <span class="time" id="curTime">۰:۰۰</span>
+          <input type="range" id="seekBar" min="0" max="100" value="0" disabled>
+          <span class="time" id="durTime">۰:۰۰</span>
+        </div>
+      </div>
+
+      <div class="row volume-row">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 010 7"></path></svg>
+        <input type="range" id="volumeBar" min="0" max="100" value="80">
+      </div>
+
+      <div class="eq-block">
+        <div class="eq-head">
+          <h2>میزان‌سازی</h2>
+          <label class="switch">
+            <span id="autoLabel">خودکار</span>
+            <input type="checkbox" id="autoToggle" checked>
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <div class="meters">
+          <div class="meter">
+            <div class="meter-top"><span class="meter-label">بم</span><span class="meter-val" id="bassVal">۰ dB</span></div>
+            <input type="range" id="bassSlider" min="-12" max="6" value="0" step="0.5" disabled>
+          </div>
+          <div class="meter">
+            <div class="meter-top"><span class="meter-label">وضوح</span><span class="meter-val" id="presVal">۰ dB</span></div>
+            <input type="range" id="presSlider" min="-12" max="6" value="0" step="0.5" disabled>
+          </div>
+          <div class="meter">
+            <div class="meter-top"><span class="meter-label">تیزی</span><span class="meter-val" id="trebVal">۰ dB</span></div>
+            <input type="range" id="trebSlider" min="-12" max="6" value="0" step="0.5" disabled>
+          </div>
+        </div>
+      </div>
+
+      <div class="add-row">
+        <button class="btn primary" id="addBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+          افزودن آهنگ
+        </button>
+        <input type="file" id="fileInput" accept="audio/*" multiple class="visually-hidden">
+      </div>
+
+    </section>
+
+    <!-- PLAYLIST -->
+    <aside class="panel playlist">
+      <div class="playlist-head">
+        <h2>لیست پخش</h2>
+        <span class="playlist-count" id="plCount">۰ آهنگ</span>
+      </div>
+      <ul class="plist" id="plist"></ul>
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        <span>هنوز آهنگی اضافه نکردی</span>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Persian digit helper ---------- */
+  const faDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  function toFa(input){
+    return String(input).replace(/[0-9]/g, d => faDigits[+d]);
+  }
+
+  /* ---------- Theme ---------- */
+  const themeBtn = document.getElementById('themeBtn');
+  const themeIcon = document.getElementById('themeIcon');
+  const sunPath = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+  const moonPath = '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"></path>';
+  function applyTheme(t){
+    if(t){ document.documentElement.setAttribute('data-theme', t); }
+    else { document.documentElement.removeAttribute('data-theme'); }
+    const isDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    themeIcon.innerHTML = isDark ? moonPath : sunPath;
+  }
+  try {
+    const saved = localStorage.getItem('mizan-theme');
+    applyTheme(saved || null);
+  } catch(e){ applyTheme(null); }
+  themeBtn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try{ localStorage.setItem('mizan-theme', next); }catch(e){}
+  });
+
+  /* ---------- IndexedDB ---------- */
+  const DB_NAME = 'mizan-db';
+  const STORE = 'tracks';
+  let dbPromise = null;
+  function openDB(){
+    if(dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains(STORE)){
+          const store = db.createObjectStore(STORE, {keyPath:'id', autoIncrement:true});
+          store.createIndex('order', 'order');
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbPromise;
+  }
+  async function dbAdd(name, blob){
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      const req = store.add({name, blob, order: Date.now()});
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function dbGetAll(){
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const store = tx.objectStore(STORE);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const items = req.result || [];
+        items.sort((a,b) => a.order - b.order);
+        resolve(items);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function dbDelete(id){
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function dbUpdateOrder(id, order){
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      const getReq = store.get(id);
+      getReq.onsuccess = () => {
+        const item = getReq.result;
+        if(item){ item.order = order; store.put(item); }
+        resolve();
+      };
+      getReq.onerror = () => reject(getReq.error);
+    });
+  }
+
+  /* ---------- State ---------- */
+  let playlist = [];   // {id, name, url}
+  let currentIndex = -1;
+  let isPlaying = false;
+  let autoMode = true;
+
+  const audioEl = new Audio();
+  audioEl.crossOrigin = 'anonymous';
+
+  let audioCtx = null, sourceNode = null, preAnalyser = null, postAnalyser = null;
+  let bassFilter, presFilter, trebFilter, compressor, gainNode;
+  let graphReady = false;
+
+  const manualGain = {bass:0, pres:0, treb:0};
+  const liveGain = {bass:0, pres:0, treb:0};
+
+  /* ---------- DOM refs ---------- */
+  const plistEl = document.getElementById('plist');
+  const emptyState = document.getElementById('emptyState');
+  const plCount = document.getElementById('plCount');
+  const npTitle = document.getElementById('npTitle');
+  const npEyebrow = document.getElementById('npEyebrow');
+  const playBtn = document.getElementById('playBtn');
+  const playIcon = document.getElementById('playIcon');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const seekBar = document.getElementById('seekBar');
+  const curTimeEl = document.getElementById('curTime');
+  const durTimeEl = document.getElementById('durTime');
+  const volumeBar = document.getElementById('volumeBar');
+  const addBtn = document.getElementById('addBtn');
+  const fileInput = document.getElementById('fileInput');
+  const autoToggle = document.getElementById('autoToggle');
+  const bassSlider = document.getElementById('bassSlider');
+  const presSlider = document.getElementById('presSlider');
+  const trebSlider = document.getElementById('trebSlider');
+  const bassVal = document.getElementById('bassVal');
+  const presVal = document.getElementById('presVal');
+  const trebVal = document.getElementById('trebVal');
+  const vizStatusText = document.getElementById('vizStatusText');
+  const vizDot = document.getElementById('vizDot');
+  const canvas = document.getElementById('viz');
+  const ctx2d = canvas.getContext('2d');
+
+  const PLAY_ICON = '<path d="M8 5v14l11-7z" transform="scale(-1,1) translate(-24,0)"></path>';
+  const PAUSE_ICON = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"></path>';
+
+  const ICON_PLAY_SMALL = '<path d="M8 5v14l11-7z" transform="scale(-1,1) translate(-24,0)"></path>';
+  const ICON_PAUSE_SMALL = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"></path>';
+  const ICON_UP = '<path d="M12 19V5M5 12l7-7 7 7"></path>';
+  const ICON_DOWN = '<path d="M12 5v14M19 12l-7 7-7-7"></path>';
+  const ICON_X = '<path d="M18 6L6 18M6 6l12 12"></path>';
+
+  /* ---------- Rendering the playlist ---------- */
+  function renderPlaylist(){
+    plistEl.innerHTML = '';
+    plCount.textContent = toFa(playlist.length) + ' آهنگ';
+    emptyState.style.display = playlist.length ? 'none' : 'flex';
+
+    playlist.forEach((track, i) => {
+      const li = document.createElement('li');
+      li.className = 'track-item' + (i === currentIndex ? ' playing' : '');
+
+      const playBtnEl = document.createElement('button');
+      playBtnEl.className = 'track-play';
+      playBtnEl.setAttribute('aria-label', 'پخش ' + track.name);
+      playBtnEl.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor">' +
+        ((i === currentIndex && isPlaying) ? ICON_PAUSE_SMALL : ICON_PLAY_SMALL) + '</svg>';
+      playBtnEl.addEventListener('click', () => {
+        if(i === currentIndex){ togglePlay(); }
+        else { loadTrack(i, true); }
+      });
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'track-name';
+      nameEl.textContent = track.name;
+
+      const actions = document.createElement('div');
+      actions.className = 'track-actions';
+
+      const upBtn = document.createElement('button');
+      upBtn.setAttribute('aria-label', 'جابه‌جایی به بالا');
+      upBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ICON_UP+'</svg>';
+      upBtn.addEventListener('click', (e) => { e.stopPropagation(); moveTrack(i, -1); });
+
+      const downBtn = document.createElement('button');
+      downBtn.setAttribute('aria-label', 'جابه‌جایی به پایین');
+      downBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ICON_DOWN+'</svg>';
+      downBtn.addEventListener('click', (e) => { e.stopPropagation(); moveTrack(i, 1); });
+
+      const delBtn = document.createElement('button');
+      delBtn.setAttribute('aria-label', 'حذف ' + track.name);
+      delBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ICON_X+'</svg>';
+      delBtn.addEventListener('click', (e) => { e.stopPropagation(); removeTrack(i); });
+
+      actions.append(upBtn, downBtn, delBtn);
+      li.append(playBtnEl, nameEl, actions);
+      plistEl.appendChild(li);
+    });
+  }
+
+  async function moveTrack(i, dir){
+    const j = i + dir;
+    if(j < 0 || j >= playlist.length) return;
+    [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+    if(currentIndex === i) currentIndex = j;
+    else if(currentIndex === j) currentIndex = i;
+    renderPlaylist();
+    // persist new order
+    for(let k=0;k<playlist.length;k++){
+      if (playlist[k].kind !== 'native') await dbUpdateOrder(playlist[k].id, k);
+    }
+  }
+
+  async function removeTrack(i){
+    const track = playlist[i];
+    if (track.kind !== 'native') {
+      await dbDelete(track.id);
+      URL.revokeObjectURL(track.url);
+    }
+    const wasCurrent = (i === currentIndex);
+    playlist.splice(i, 1);
+    if(wasCurrent){
+      audioEl.pause();
+      isPlaying = false;
+      currentIndex = -1;
+      npTitle.textContent = 'آهنگی انتخاب نشده';
+      npEyebrow.textContent = 'در حال حاضر';
+      updatePlayButton();
+      disableTransport(true);
+    } else if(currentIndex > i){
+      currentIndex--;
+    }
+    renderPlaylist();
+  }
+
+  /* ---------- Android music library bridge ---------- */
+  let androidLibraryIds = new Set();
+  window.refreshAndroidLibrary = async function(){
+    if (!window.AndroidMusic || typeof AndroidMusic.getSongs !== 'function') return;
+    try {
+      const items = JSON.parse(AndroidMusic.getSongs() || '[]');
+      const existingNative = new Set(playlist.filter(t => t.kind === 'native').map(t => String(t.nativeId)));
+      const found = new Set(items.map(t => String(t.id)));
+      // Drop stale native entries, retaining any locally imported browser files.
+      playlist = playlist.filter(t => t.kind !== 'native' || found.has(String(t.nativeId)));
+      for (const item of items) {
+        if (!existingNative.has(String(item.id))) {
+          playlist.push({
+            id: 'native-' + item.id,
+            nativeId: item.id,
+            kind: 'native',
+            name: item.title || item.displayName || 'آهنگ بدون نام',
+            url: item.uri
+          });
+        }
+      }
+      renderPlaylist();
+      disableTransport(playlist.length === 0);
+      if (currentIndex === -1 && playlist.length) {
+        npTitle.textContent = 'برای پخش، روی آهنگ بزن';
+        npEyebrow.textContent = 'آماده';
+      }
+    } catch(e) {
+      console.warn('Mizan Android library scan failed', e);
+    }
+  };
+
+  /* ---------- File adding ---------- */
+  addBtn.addEventListener('click', () => {
+    if (window.AndroidMusic && typeof AndroidMusic.getSongs === 'function') {
+      window.refreshAndroidLibrary();
+    } else {
+      fileInput.click();
+    }
+  });
+  fileInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    for(const file of files){
+      const id = await dbAdd(file.name, file);
+      playlist.push({id, name: file.name, url: URL.createObjectURL(file)});
+    }
+    fileInput.value = '';
+    renderPlaylist();
+    disableTransport(playlist.length === 0);
+    if(currentIndex === -1 && playlist.length){
+      // just populate title, don't autoplay without a gesture-triggered play
+      npTitle.textContent = 'برای پخش، روی آهنگ بزن';
+      npEyebrow.textContent = 'آماده';
+    }
+  });
+
+  async function loadExisting(){
+    const items = await dbGetAll();
+    playlist = items.map(item => ({id:item.id, name:item.name, url:URL.createObjectURL(item.blob), kind:'local'}));
+    renderPlaylist();
+    disableTransport(playlist.length === 0);
+    if (window.AndroidMusic) setTimeout(() => window.refreshAndroidLibrary(), 250);
+  }
+
+  /* ---------- Audio graph ---------- */
+  function ensureGraph(){
+    if(graphReady) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audioEl);
+
+    preAnalyser = audioCtx.createAnalyser();
+    preAnalyser.fftSize = 2048;
+    preAnalyser.smoothingTimeConstant = 0.75;
+
+    bassFilter = audioCtx.createBiquadFilter();
+    bassFilter.type = 'lowshelf';
+    bassFilter.frequency.value = 200;
+    bassFilter.gain.value = 0;
+
+    presFilter = audioCtx.createBiquadFilter();
+    presFilter.type = 'peaking';
+    presFilter.frequency.value = 3500;
+    presFilter.Q.value = 1.2;
+    presFilter.gain.value = 0;
+
+    trebFilter = audioCtx.createBiquadFilter();
+    trebFilter.type = 'highshelf';
+    trebFilter.frequency.value = 8000;
+    trebFilter.gain.value = 0;
+
+    postAnalyser = audioCtx.createAnalyser();
+    postAnalyser.fftSize = 2048;
+    postAnalyser.smoothingTimeConstant = 0.75;
+
+    compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.value = -22;
+    compressor.knee.value = 28;
+    compressor.ratio.value = 3;
+    compressor.attack.value = 0.02;
+    compressor.release.value = 0.22;
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = (parseFloat(volumeBar.value) || 80) / 100;
+
+    sourceNode.connect(preAnalyser);
+    preAnalyser.connect(bassFilter);
+    bassFilter.connect(presFilter);
+    presFilter.connect(trebFilter);
+    trebFilter.connect(postAnalyser);
+    postAnalyser.connect(compressor);
+    compressor.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    graphReady = true;
+    startVisualLoop();
+    startAutoEQLoop();
+  }
+
+  /* ---------- Track loading / transport ---------- */
+  function loadTrack(i, autoplay){
+    if(i < 0 || i >= playlist.length) return;
+    currentIndex = i;
+    const track = playlist[i];
+    ensureGraph();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    audioEl.src = track.url;
+    npEyebrow.textContent = 'در حال پخش';
+    npTitle.textContent = track.name;
+    disableTransport(false);
+    renderPlaylist();
+    if(autoplay){
+      audioEl.play().then(() => { isPlaying = true; updatePlayButton(); renderPlaylist(); }).catch(()=>{});
+    }
+  }
+
+  function disableTransport(disabled){
+    playBtn.disabled = disabled;
+    prevBtn.disabled = disabled;
+    nextBtn.disabled = disabled;
+    seekBar.disabled = disabled;
+  }
+
+  function togglePlay(){
+    if(currentIndex === -1){
+      if(playlist.length) loadTrack(0, true);
+      return;
+    }
+    ensureGraph();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(isPlaying){
+      audioEl.pause();
+      isPlaying = false;
+    } else {
+      audioEl.play().catch(()=>{});
+      isPlaying = true;
+    }
+    updatePlayButton();
+    renderPlaylist();
+  }
+  function updatePlayButton(){
+    playIcon.innerHTML = isPlaying ? PAUSE_ICON : PLAY_ICON;
+    playBtn.setAttribute('aria-label', isPlaying ? 'توقف' : 'پخش');
+  }
+
+  playBtn.addEventListener('click', togglePlay);
+  nextBtn.addEventListener('click', () => {
+    if(playlist.length === 0) return;
+    const next = (currentIndex + 1) % playlist.length;
+    loadTrack(next, true);
+  });
+  prevBtn.addEventListener('click', () => {
+    if(playlist.length === 0) return;
+    const prev = (currentIndex - 1 + playlist.length) % playlist.length;
+    loadTrack(prev, true);
+  });
+  audioEl.addEventListener('ended', () => {
+    if(playlist.length === 0) return;
+    const next = (currentIndex + 1) % playlist.length;
+    loadTrack(next, true);
+  });
+
+  function formatTime(sec){
+    if(!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return toFa(m) + ':' + toFa(String(s).padStart(2,'0'));
+  }
+  audioEl.addEventListener('timeupdate', () => {
+    if(!audioEl.duration) return;
+    seekBar.value = (audioEl.currentTime / audioEl.duration) * 100;
+    curTimeEl.textContent = formatTime(audioEl.currentTime);
+    durTimeEl.textContent = formatTime(audioEl.duration);
+  });
+  audioEl.addEventListener('loadedmetadata', () => {
+    durTimeEl.textContent = formatTime(audioEl.duration);
+  });
+  seekBar.addEventListener('input', () => {
+    if(!audioEl.duration) return;
+    audioEl.currentTime = (seekBar.value / 100) * audioEl.duration;
+  });
+  volumeBar.addEventListener('input', () => {
+    const v = parseFloat(volumeBar.value) / 100;
+    if(gainNode) gainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
+  });
+
+  /* ---------- Manual EQ ---------- */
+  function applyManual(){
+    if(!graphReady) return;
+    bassFilter.gain.setTargetAtTime(manualGain.bass, audioCtx.currentTime, 0.05);
+    presFilter.gain.setTargetAtTime(manualGain.pres, audioCtx.currentTime, 0.05);
+    trebFilter.gain.setTargetAtTime(manualGain.treb, audioCtx.currentTime, 0.05);
+  }
+  bassSlider.addEventListener('input', () => { manualGain.bass = parseFloat(bassSlider.value); applyManual(); updateMeterDisplay('bass', manualGain.bass); });
+  presSlider.addEventListener('input', () => { manualGain.pres = parseFloat(presSlider.value); applyManual(); updateMeterDisplay('pres', manualGain.pres); });
+  trebSlider.addEventListener('input', () => { manualGain.treb = parseFloat(trebSlider.value); applyManual(); updateMeterDisplay('treb', manualGain.treb); });
+
+  autoToggle.addEventListener('change', () => {
+    autoMode = autoToggle.checked;
+    bassSlider.disabled = autoMode;
+    presSlider.disabled = autoMode;
+    trebSlider.disabled = autoMode;
+    if(!autoMode){
+      bassSlider.value = liveGain.bass; manualGain.bass = liveGain.bass;
+      presSlider.value = liveGain.pres; manualGain.pres = liveGain.pres;
+      trebSlider.value = liveGain.treb; manualGain.treb = liveGain.treb;
+    }
+  });
+
+  function updateMeterDisplay(band, value){
+    const rounded = Math.round(value * 10) / 10;
+    const text = toFa((rounded > 0 ? '+' : '') + rounded) + ' dB';
+    if(band === 'bass') bassVal.textContent = text;
+    if(band === 'pres') presVal.textContent = text;
+    if(band === 'treb') trebVal.textContent = text;
+  }
+
+  /* ---------- Auto EQ engine ---------- */
+  function bandAverage(data, sampleRate, fftSize, freqLo, freqHi){
+    const binHz = sampleRate / fftSize;
+    let lo = Math.max(0, Math.floor(freqLo / binHz));
+    let hi = Math.min(data.length - 1, Math.ceil(freqHi / binHz));
+    if(hi <= lo) hi = lo + 1;
+    let sum = 0, count = 0;
+    for(let i = lo; i <= hi && i < data.length; i++){ sum += data[i]; count++; }
+    return count ? sum / count : 0;
+  }
+
+  let autoLoopId = null;
+  function startAutoEQLoop(){
+    if(autoLoopId) return;
+    const preData = new Uint8Array(preAnalyser.frequencyBinCount);
+    autoLoopId = setInterval(() => {
+      if(!autoMode || audioEl.paused){
+        vizDot.classList.remove('active');
+        return;
+      }
+      preAnalyser.getByteFrequencyData(preData);
+      const sr = audioCtx.sampleRate;
+      const fft = preAnalyser.fftSize;
+
+      const bass = bandAverage(preData, sr, fft, 20, 250);
+      const mid = bandAverage(preData, sr, fft, 250, 2000);
+      const presence = bandAverage(preData, sr, fft, 2000, 6000);
+      const treble = bandAverage(preData, sr, fft, 6000, 14000);
+      const overall = (bass + mid + presence + treble) / 4 || 1;
+
+      const bassRatio = bass / overall;
+      const presRatio = presence / overall;
+      const trebRatio = treble / overall;
+
+      let targetBass = 0, targetPres = 0, targetTreb = 0;
+
+      if(bassRatio > 1.3) targetBass = clamp(-(bassRatio - 1) * 8, -9, 0);
+      else if(bassRatio < 0.75) targetBass = clamp((0.75 - bassRatio) * 6, 0, 3.5);
+
+      if(presRatio > 1.2) targetPres = clamp(-(presRatio - 1) * 11, -10, 0);
+
+      if(trebRatio > 1.15) targetTreb = clamp(-(trebRatio - 1) * 10, -9, 0);
+      else if(trebRatio < 0.55) targetTreb = clamp((0.55 - trebRatio) * 4, 0, 2);
+
+      liveGain.bass = targetBass;
+      liveGain.pres = targetPres;
+      liveGain.treb = targetTreb;
+
+      bassFilter.gain.setTargetAtTime(targetBass, audioCtx.currentTime, 0.4);
+      presFilter.gain.setTargetAtTime(targetPres, audioCtx.currentTime, 0.4);
+      trebFilter.gain.setTargetAtTime(targetTreb, audioCtx.currentTime, 0.4);
+
+      bassSlider.value = targetBass;
+      presSlider.value = targetPres;
+      trebSlider.value = targetTreb;
+      updateMeterDisplay('bass', targetBass);
+      updateMeterDisplay('pres', targetPres);
+      updateMeterDisplay('treb', targetTreb);
+
+      const correcting = (targetPres < -1 || targetTreb < -1 || targetBass < -1 || targetBass > 1);
+      vizDot.classList.toggle('active', correcting);
+      if(targetPres < -3 || targetTreb < -3){
+        vizStatusText.textContent = 'صدای تیز داره کم می‌شه — ' + toFa(Math.round(Math.min(targetPres, targetTreb))) + ' دسی‌بل';
+      } else if(targetBass < -3){
+        vizStatusText.textContent = 'بم این آهنگ داره کنترل می‌شه — ' + toFa(Math.round(targetBass)) + ' دسی‌بل';
+      } else if(targetBass > 1){
+        vizStatusText.textContent = 'بم کمی تقویت شد — ' + toFa('+' + Math.round(targetBass)) + ' دسی‌بل';
+      } else {
+        vizStatusText.textContent = 'صدای این آهنگ متعادله، تنظیم خاصی لازم نیست.';
+      }
+    }, 220);
+  }
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  /* ---------- Visualizer ---------- */
+  function startVisualLoop(){
+    const preData = new Uint8Array(preAnalyser.frequencyBinCount);
+    const postData = new Uint8Array(postAnalyser.frequencyBinCount);
+    const numBars = 46;
+    const minF = 20, maxF = 15000;
+
+    function barEdges(){
+      const edges = [];
+      for(let i = 0; i <= numBars; i++){
+        edges.push(minF * Math.pow(maxF / minF, i / numBars));
+      }
+      return edges;
+    }
+    const edges = barEdges();
+
+    function draw(){
+      requestAnimationFrame(draw);
+      const cw = canvas.clientWidth || 900;
+      const ch = canvas.clientHeight || 150;
+      if(canvas.width !== cw * devicePixelRatio || canvas.height !== ch * devicePixelRatio){
+        canvas.width = cw * devicePixelRatio;
+        canvas.height = ch * devicePixelRatio;
+      }
+      ctx2d.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      ctx2d.clearRect(0, 0, cw, ch);
+
+      const styles = getComputedStyle(document.documentElement);
+      const teal = styles.getPropertyValue('--accent-teal').trim();
+      const amber = styles.getPropertyValue('--accent-amber').trim();
+      const dimBorder = styles.getPropertyValue('--border').trim();
+
+      if(!graphReady){
+        ctx2d.fillStyle = dimBorder;
+        for(let i=0;i<numBars;i++){
+          const x = (i/numBars) * cw;
+          const w = (cw/numBars) * 0.7;
+          ctx2d.fillRect(x, ch - 3, w, 3);
+        }
+        return;
+      }
+
+      preAnalyser.getByteFrequencyData(preData);
+      postAnalyser.getByteFrequencyData(postData);
+      const sr = audioCtx.sampleRate, fft = preAnalyser.fftSize;
+      const binHz = sr / fft;
+
+      const barW = (cw / numBars) * 0.7;
+      const gap = (cw / numBars) * 0.3;
+
+      for(let i = 0; i < numBars; i++){
+        const lo = Math.max(0, Math.floor(edges[i] / binHz));
+        const hi = Math.min(preData.length - 1, Math.ceil(edges[i+1] / binHz));
+        let preSum = 0, postSum = 0, count = 0;
+        for(let b = lo; b <= hi && b < preData.length; b++){ preSum += preData[b]; postSum += postData[b]; count++; }
+        const preAvg = count ? preSum / count : 0;
+        const postAvg = count ? postSum / count : 0;
+
+        const x = i * (barW + gap) + gap/2;
+        const postH = (postAvg / 255) * (ch - 6);
+        const preH = (preAvg / 255) * (ch - 6);
+
+        // ghost bar (original level) when higher than corrected
+        if(preH > postH + 2){
+          ctx2d.fillStyle = amber;
+          ctx2d.globalAlpha = 0.35;
+          ctx2d.fillRect(x, ch - preH, barW, 2);
+          ctx2d.globalAlpha = 1;
+        }
+        ctx2d.fillStyle = teal;
+        ctx2d.fillRect(x, ch - postH, barW, Math.max(postH, 2));
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  // kick off a static baseline draw before graph exists
+  startVisualLoop = (function(orig){
+    let started = false;
+    return function(){
+      if(started) return;
+      started = true;
+      orig();
+    };
+  })(startVisualLoop);
+
+  /* Draw an idle baseline immediately even with no graph yet */
+  (function idleDraw(){
+    const cw = canvas.clientWidth || 900, ch = canvas.clientHeight || 150;
+    canvas.width = cw * devicePixelRatio; canvas.height = ch * devicePixelRatio;
+    ctx2d.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    const border = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+    ctx2d.fillStyle = border;
+    const numBars = 46;
+    for(let i=0;i<numBars;i++){
+      const x = (i/numBars) * cw;
+      const w = (cw/numBars) * 0.7;
+      ctx2d.fillRect(x, ch - 3, w, 3);
+    }
+  })();
+
+  /* ---------- Init ---------- */
+  loadExisting();
+})();
+</script>
+</body>
+</html>
